@@ -1,0 +1,104 @@
+    private RequestQueue mRequestQueue;
+    private StringRequest stringRequest;
+
+    private String translate(String inputText) throws Exception {
+
+        final String targetLanguage = "en";
+        final String translateResult = "Nothing";
+
+        final String[] outputText = {""};
+        String url;
+        final String[] sourceLang = {"en"};
+        mRequestQueue = Volley.newRequestQueue(getApplicationContext());
+
+        url = "https://translate.yandex.net/api/v1.5/tr.json/detect" +
+                "?key=trnsl.1.1.20181007T044830Z.a0e5b383a27777ef.584c008725492f1b73ccc814d25637ceedce7578" +
+                "&text="+URLEncoder.encode(inputText, "UTF-8");
+
+        stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+
+            @Override
+            public void onResponse(String response) {
+                //Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
+
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    sourceLang[0] = jsonObject.getString("lang");
+                    ReadTextActivity.targetLanguage = jsonObject.getString("lang");
+                    Toast.makeText(getApplicationContext(), "Detect result" + response, Toast.LENGTH_SHORT).show();
+
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "Unable to parse detect response. " + e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+        ]        }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(getApplicationContext(), "Error in response of detect" + error.toString(), Toast.LENGTH_LONG).show();
+            }
+        });
+
+        mRequestQueue.add(stringRequest);
+
+
+        // Translate
+
+        url = "https://translate.yandex.net/api/v1.5/tr.json/translate" +
+                "?key=trnsl.1.1.20181007T044830Z.a0e5b383a27777ef.584c008725492f1b73ccc814d25637ceedce7578" +
+                "&text=" + URLEncoder.encode(inputText, "UTF-8") +
+                "&lang="+ ReadTextActivity.targetLanguage +"-en";
+
+        stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                //Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+                    Toast.makeText(getApplicationContext(), response, Toast.LENGTH_SHORT).show();
+                    outputText[0] = jsonObject.getString("text");
+                    ReadTextActivity.translateResult = jsonObject.getString("text");
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "Error in translation. " + e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(getApplicationContext(),"Error in response of translate " +  error.toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        mRequestQueue.add(stringRequest);
+
+        return translateResult;
+    }
+
+    static String detectLanguage = "init", translationResult;
+
+    public static void setDetectLanguage(String lang){ReadTextActivity.detectLanguage = detectLanguage;};
+
+    private void detectLanguageFunction() throws UnsupportedEncodingException {
+        new StringRequest(Request.Method.POST, detectLanguageURL(readText.getText().toString()),
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            Toast.makeText(getApplicationContext(), new JSONObject(response).toString(), Toast.LENGTH_SHORT).show();
+                            SQLiteHandler.setDetectLanguage(new JSONObject(response).getString("lang"));
+                        } catch (JSONException e) {
+                            SQLiteHandler.setDetectLanguage("null");
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                SQLiteHandler.setDetectLanguage("null");
+            }
+        });
+    }
+
+    private String detectLanguageURL(String text) throws UnsupportedEncodingException {
+        return "https://translate.yandex.net/api/v1.5/tr.json/detect" +
+                "?key=trnsl.1.1.20181007T044830Z.a0e5b383a27777ef.584c008725492f1b73ccc814d25637ceedce7578" +
+                "&text="+URLEncoder.encode(text, "UTF-8");
+    }

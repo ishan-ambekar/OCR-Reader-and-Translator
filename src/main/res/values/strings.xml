@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">OCRApplication</string>
+    <string name="title_activity_password">PasswordActivity</string>
+</resources>
